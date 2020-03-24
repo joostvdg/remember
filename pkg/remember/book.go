@@ -8,7 +8,7 @@ type Book struct {
 	Publisher string
 	Comment   string
 	Series    bool
-	Labels 	  []string
+	Labels    []string
 }
 
 func (b Book) GetLabels() []string {
