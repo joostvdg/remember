@@ -1,18 +1,17 @@
 package main
 
 import (
+	"github.com/labstack/echo/v4/middleware"
 	"net/http"
-	`strconv`
+	"strconv"
 
+	"github.com/joostvdg/remember/pkg/context"
+	"github.com/joostvdg/remember/pkg/oauth"
 	"github.com/joostvdg/remember/pkg/remember"
 	"github.com/joostvdg/remember/pkg/store"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
-
-type CustomContext struct {
-	echo.Context
-	MemoryStore store.MemoryStore
-}
 
 func main() {
 	memoryStore := initMemoryStore()
@@ -21,15 +20,30 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
+	e.Use(middleware.Logger())
+	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup: "header:X-XSRF-TOKEN",
+	}))
+
+	e.GET("/auth/google/login", oauth.OauthGoogleLogin)
+	// ITS A GET?
+	//e.POST("/auth/google/callback", oauth.OauthGoogleCallback)
+	//e.PUT("/auth/google/callback", oauth.OauthGoogleCallback)
+	e.GET("/auth/google/callback", oauth.OauthGoogleCallback)
+
 	e.GET("/users/:id", getUser)
 	e.GET("/users/:id/lists/:listId", getUserList)
 	e.PUT("/users/:id/lists", newList)
-    e.POST("/users/:id/lists/:listId/entries/:entryId/progression/:progressionKey/:current", updateProgression)
+	e.POST("/users/:id/lists/:listId/entries/:entryId/progression/:progressionKey/:current", updateProgression)
+
+	sugar := zap.NewExample().Sugar()
+	defer sugar.Sync()
 	e.Use(func(h echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			cc := &CustomContext{
+			cc := &context.CustomContext{
 				c,
 				memoryStore,
+				sugar,
 			}
 			return h(cc)
 		}
@@ -38,7 +52,7 @@ func main() {
 }
 
 func newList(c echo.Context) (err error) {
-	cc := c.(*CustomContext)
+	cc := c.(*context.CustomContext)
 	// User ID from path `users/:id`
 	id := cc.Param("id")
 
@@ -54,7 +68,6 @@ func newList(c echo.Context) (err error) {
 		return c.String(http.StatusNotFound, "No user by that name")
 	}
 
-
 	list := new(remember.MediaList)
 	if err = c.Bind(list); err != nil {
 		return c.String(http.StatusBadRequest, "Not a valid MediaList")
@@ -65,7 +78,7 @@ func newList(c echo.Context) (err error) {
 
 // e.GET("/users/:id", getUser)
 func getUser(c echo.Context) error {
-	cc := c.(*CustomContext)
+	cc := c.(*context.CustomContext)
 	// User ID from path `users/:id`
 	id := cc.Param("id")
 
@@ -79,7 +92,7 @@ func getUser(c echo.Context) error {
 }
 
 func getUserList(c echo.Context) error {
-	cc := c.(*CustomContext)
+	cc := c.(*context.CustomContext)
 	// User ID from path `users/:id`
 	id := cc.Param("id")
 	listId := cc.Param("listId")
@@ -88,7 +101,7 @@ func getUserList(c echo.Context) error {
 	for _, user := range cc.MemoryStore.Users {
 		if id == user.Id {
 			userFound = true
-			for _,list := range user.Lists {
+			for _, list := range user.Lists {
 				if list.Id == listId {
 					return c.JSON(http.StatusOK, list)
 				}
@@ -108,57 +121,56 @@ func getUserList(c echo.Context) error {
 // for example, I've just finished watching Ep5 of Season 4 of The Expanse
 // /users/ABC/lists/MovieListOne/entries/EntryOne/progression/3/5
 func updateProgression(c echo.Context) error {
-    cc := c.(*CustomContext)
-    id := cc.Param("id")
+	cc := c.(*context.CustomContext)
+	id := cc.Param("id")
 
 	userIsFound := false
-    var foundUser remember.User
-    for _, user := range cc.MemoryStore.Users {
-        if id == user.Id {
-            foundUser = *user
-            userIsFound = true
-        }
-    }
-    if !userIsFound {
-        return c.String(http.StatusNotFound, "No user by that name")
-    }
-    listId := cc.Param("listId")
-    entryId := cc.Param("entryId")
-    progressionKeyString := cc.Param("progressionKey")
+	var foundUser remember.User
+	for _, user := range cc.MemoryStore.Users {
+		if id == user.Id {
+			foundUser = *user
+			userIsFound = true
+		}
+	}
+	if !userIsFound {
+		return c.String(http.StatusNotFound, "No user by that name")
+	}
+	listId := cc.Param("listId")
+	entryId := cc.Param("entryId")
+	progressionKeyString := cc.Param("progressionKey")
 	current := cc.Param("current")
 
 	progressionKey, progressionErr := strconv.Atoi(progressionKeyString)
-    currentUpdate,currentErr := strconv.Atoi(current)
+	currentUpdate, currentErr := strconv.Atoi(current)
 
-    if progressionErr != nil || currentErr != nil {
-    	return c.String(http.StatusBadRequest, "Supplied ids were not correct")
+	if progressionErr != nil || currentErr != nil {
+		return c.String(http.StatusBadRequest, "Supplied ids were not correct")
 	}
 
-    found := false
-    updated := false
-    for _,list := range foundUser.Lists {
-        if list.Id == listId {
-            for _,entry := range list.Entries {
-                if entry.Id == entryId && entry.Progression != nil && len(entry.Progression) >= progressionKey {
+	found := false
+	updated := false
+	for _, list := range foundUser.Lists {
+		if list.Id == listId {
+			for _, entry := range list.Entries {
+				if entry.Id == entryId && entry.Progression != nil && len(entry.Progression) >= progressionKey {
 					found = true
 					entry.Progression[progressionKey].Current = currentUpdate
 					updated = true
-                }
-            }
-        }
-    }
+				}
+			}
+		}
+	}
 
-    if !found {
+	if !found {
 		return c.String(http.StatusNotFound, "Could not find the progression to update")
 	}
 
-    if updated {
-        return c.String(http.StatusAccepted, "Update processed")
-    } else {
-        return c.String(http.StatusNoContent, "Nothing to update")
-    }
+	if updated {
+		return c.String(http.StatusAccepted, "Update processed")
+	} else {
+		return c.String(http.StatusNoContent, "Nothing to update")
+	}
 }
-
 
 func initMemoryStore() store.MemoryStore {
 	user := &remember.User{
@@ -206,7 +218,7 @@ func initMemoryStore() store.MemoryStore {
 	var bookEntries = []remember.MediaEntry{bookEntry1, bookEntry2}
 
 	bookList := remember.MediaList{
-		Id:  		  "2",
+		Id:          "2",
 		Owner:       user.Id,
 		Name:        "MyBookList",
 		Description: "Where I keep track of the books I want to read",
@@ -281,7 +293,7 @@ func initMemoryStore() store.MemoryStore {
 	}
 	progressions := []remember.Progression{s1, s2, s3, s4}
 	tvSeriesEntry := remember.MediaEntry{
-		Id:  		 "3",
+		Id:          "3",
 		Item:        tvSeries1,
 		Order:       2,
 		Comment:     "No Comment",
@@ -290,7 +302,7 @@ func initMemoryStore() store.MemoryStore {
 	}
 	var movieEntries = []remember.MediaEntry{movieEntry1, movieEntry2, tvSeriesEntry}
 	movieList := remember.MediaList{
-		Id:  		  "1",
+		Id:           "1",
 		Owner:        user.Id,
 		Contributors: nil,
 		Public:       true,

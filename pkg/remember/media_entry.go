@@ -2,7 +2,7 @@ package remember
 
 type MediaEntry struct {
 	Item        MediaItem
-	Id 			string
+	Id          string
 	Order       int
 	Comment     string
 	Finished    bool
