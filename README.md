@@ -49,3 +49,10 @@ Example of a TV Series
             * MediaItems
                 * MediaItem 0:
                     * Name Episode 1: ...
+                    
+## Links
+
+* https://echo.labstack.com/middleware/logger
+* https://dev.to/douglasmakey/oauth2-example-with-go-3n8a
+* https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
+* https://sbstjn.com/host-golang-slackbot-on-heroku-with-hanu.html

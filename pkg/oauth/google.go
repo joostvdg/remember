@@ -25,7 +25,7 @@ import (
 var googleOauthConfig = &oauth2.Config{
 	RedirectURL:  "https://remember.fly.dev/auth/google/callback",
 	ClientID:     "883463116122-bkmkui3jg5bn3u65q2pkbmr4jgq0scng.apps.googleusercontent.com",
-	ClientSecret: "UIqqsnGIox2HtpiGBIpeVTkN",
+	ClientSecret: "G61xsYSiWqQ7bLFB7Ah0r3ZB",
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
 	Endpoint:     google.Endpoint,
 }

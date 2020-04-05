@@ -1,8 +1,10 @@
 package main
 
 import (
+	"github.com/joostvdg/remember/pkg/slack"
 	"github.com/labstack/echo/v4/middleware"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/joostvdg/remember/pkg/context"
@@ -21,9 +23,9 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 	e.Use(middleware.Logger())
-	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup: "header:X-XSRF-TOKEN",
-	}))
+	//e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+	//	TokenLookup: "header:X-XSRF-TOKEN",
+	//}))
 
 	e.GET("/auth/google/login", oauth.OauthGoogleLogin)
 	// ITS A GET?
@@ -31,6 +33,9 @@ func main() {
 	//e.PUT("/auth/google/callback", oauth.OauthGoogleCallback)
 	e.GET("/auth/google/callback", oauth.OauthGoogleCallback)
 
+	e.POST("/hoppa", slack.SlackHoppaHandler)
+	e.POST("/slack", slack.SlackInteractiveHandler)
+	e.POST("/rmb", slack.SlackHandler)
 	e.GET("/users/:id", getUser)
 	e.GET("/users/:id/lists/:listId", getUserList)
 	e.PUT("/users/:id/lists", newList)
@@ -48,7 +53,12 @@ func main() {
 			return h(cc)
 		}
 	})
-	e.Logger.Fatal(e.Start(":1323"))
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "1323"
+	}
+	e.Logger.Fatal(e.Start(":" + port))
 }
 
 func newList(c echo.Context) (err error) {
@@ -174,7 +184,7 @@ func updateProgression(c echo.Context) error {
 
 func initMemoryStore() store.MemoryStore {
 	user := &remember.User{
-		Id:    "ABC",
+		Id:    "U3N251DH9",
 		Email: "user@example.com",
 		Name:  "User",
 		Lists: nil,
@@ -304,6 +314,7 @@ func initMemoryStore() store.MemoryStore {
 	movieList := remember.MediaList{
 		Id:           "1",
 		Owner:        user.Id,
+		Name:         "Movies",
 		Contributors: nil,
 		Public:       true,
 		Entries:      movieEntries,
