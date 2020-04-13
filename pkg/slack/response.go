@@ -78,21 +78,18 @@ func SendListResponse(responseUrl string, list remember.MediaList, apiToken stri
 }
 
 func CreateViewSubmitResponse(update *slack.ViewState) *slack.ViewSubmissionResponse {
+	fmt.Printf("Found view submission, name input value: %v\n", update.Values["name_input_block"]["name_input"].Value)
 	modalTile := slack.NewTextBlockObject("plain_text", ":memo:New List", true, false)
-	modalSectionText := slack.NewTextBlockObject("plain_text", "Enter a name to create a new list", false, false)
+
+	updateText := fmt.Sprintf("Created a new list with name *%v*", update.Values["name_input_block"]["name_input"].Value)
+	modalSectionText := slack.NewTextBlockObject("plain_text", updateText, false, false)
 	modalSection := slack.NewSectionBlock(modalSectionText, nil, nil)
 
-	updateText := fmt.Sprintf("- *Created* a new list with name *%v*", update.Values["name_input_block"]["name_input"].Value)
-	updateTextBlock := slack.NewTextBlockObject("mrkdwn", updateText, true, false)
-	updateSection := slack.NewSectionBlock(updateTextBlock, nil, nil)
-
-	numberOfElements := 3
+	numberOfElements := 1
 	elementsAdded := 0
 	var blockSet []slack.Block
 	blockSet = make([]slack.Block, numberOfElements, numberOfElements)
 	elementsAdded = addBlock(blockSet, modalSection, elementsAdded)
-	elementsAdded = addBlock(blockSet, slack.NewDividerBlock(), elementsAdded)
-	elementsAdded = addBlock(blockSet, updateSection, elementsAdded)
 
 	blocks := slack.Blocks{
 		BlockSet: blockSet,
@@ -101,7 +98,6 @@ func CreateViewSubmitResponse(update *slack.ViewState) *slack.ViewSubmissionResp
 	view := &slack.ModalViewRequest{
 		Type:            "modal",
 		Title:           modalTile,
-		PrivateMetadata: "ssshhhhhhh",
 		Blocks:          blocks,
 	}
 	return slack.NewUpdateViewSubmissionResponse(view)

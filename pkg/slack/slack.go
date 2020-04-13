@@ -70,6 +70,10 @@ func InteractiveHandler(c echo.Context) error {
 	case "list_new":
 		cc.Log.Info("Found List update, sending view update")
 		viewSubmitResponse := CreateViewSubmitResponse(payload.View.State)
+
+		viewSubmitResponseJson, _ := json.Marshal(viewSubmitResponse)
+		cc.Log.Infof("View Submit Response: %v", string(viewSubmitResponseJson))
+
 		return c.JSON(http.StatusOK, viewSubmitResponse)
 	case "new_list":
 		view := NewListView()
