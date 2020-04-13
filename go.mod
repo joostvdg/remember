@@ -6,9 +6,11 @@ require (
 	cloud.google.com/go v0.56.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/labstack/echo/v4 v4.1.15
+	github.com/labstack/gommon v0.3.0
 	github.com/sbstjn/allot v0.0.0-20161025071122-1f2349af5ccd // indirect
 	github.com/sbstjn/hanu v0.1.0
 	github.com/slack-go/slack v0.6.3
+	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.14.1
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d

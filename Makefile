@@ -4,6 +4,9 @@ PROJECT_ID := remember-272515
 build: fmt
 	CGO_ENABLED=0 GOOS=linux go build -v -o remember
 
+test:
+	CGO_ENABLED=0 GOOS=linux go test -v -coverprofile cover.out ./...
+
 fmt:
 	go fmt ./...
 

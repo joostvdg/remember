@@ -14,11 +14,88 @@ func HandleList(slackCommand SlackCommand, log *zap.SugaredLogger, store store.M
 		command = slackCommand.TokenizedText[0]
 	}
 
+	log.Infof("Processing Slack List Command '%v'", command)
 	switch command {
 	case "view":
 		return GetLists(slackCommand, log, store)
+	case "new":
+		return newList(slackCommand, log)
 	default:
 		return GetLists(slackCommand, log, store)
+	}
+}
+
+func addBlock(blockSet []slack.Block, block slack.Block, counter int) int {
+	blockSet[counter] = block
+	return counter + 1
+}
+
+func newList(slackCommand SlackCommand, log *zap.SugaredLogger) *slack.Msg {
+	log.Infof("Remember GetLists invoked for: %v (%v), in %v", slackCommand.UserName, slackCommand.UserId, slackCommand.Team)
+
+	mainText := slack.NewTextBlockObject("plain_text", "Create New List", false, false)
+	modalSection := slack.NewSectionBlock(mainText, nil, nil)
+
+	textBlock := slack.NewTextBlockObject("plain_text", "Create New List", false, false)
+	buttonText := slack.NewTextBlockObject("plain_text", "Create", false, false)
+	button := slack.NewButtonBlockElement("new_list", "abc", buttonText)
+	accessory := slack.NewAccessory(button)
+	section := slack.SectionBlock{
+		Type:      "section",
+		Text:      textBlock,
+		Accessory: accessory,
+	}
+
+	numberOfElements := 3
+	elementsAdded := 0
+	var blockSet []slack.Block
+	blockSet = make([]slack.Block, numberOfElements, numberOfElements)
+	elementsAdded = addBlock(blockSet, modalSection, elementsAdded)
+	elementsAdded = addBlock(blockSet, slack.NewDividerBlock(), elementsAdded)
+	elementsAdded = addBlock(blockSet, section, elementsAdded)
+
+	blocks := slack.Blocks{
+		BlockSet: blockSet,
+	}
+	return &slack.Msg{
+		Text:   "New List",
+		Blocks: blocks,
+	}
+}
+
+func NewListView() *slack.ModalViewRequest {
+	modalTile := slack.NewTextBlockObject("plain_text", ":memo:New List", true, false)
+	modalSectionText := slack.NewTextBlockObject("plain_text", "Enter a name to create a new list", false, false)
+	modalSection := slack.NewSectionBlock(modalSectionText, nil, nil)
+
+	inputPlaceHolder := slack.NewTextBlockObject("plain_text", "please enter a name", false, false)
+	inputElement := slack.NewPlainTextInputBlockElement(inputPlaceHolder, "name_input")
+	inputLabel := slack.NewTextBlockObject("plain_text", "Name", false, false)
+	nameInputBlock := slack.NewInputBlock("name_input_block", inputLabel, inputElement)
+
+	numberOfElements := 3
+	elementsAdded := 0
+	var blockSet []slack.Block
+	blockSet = make([]slack.Block, numberOfElements, numberOfElements)
+	elementsAdded = addBlock(blockSet, modalSection, elementsAdded)
+	elementsAdded = addBlock(blockSet, slack.NewDividerBlock(), elementsAdded)
+	elementsAdded = addBlock(blockSet, nameInputBlock, elementsAdded)
+
+	blocks := slack.Blocks{
+		BlockSet: blockSet,
+	}
+
+	closeText := slack.NewTextBlockObject("plain_text", "Cancel", false, false)
+	submitText := slack.NewTextBlockObject("plain_text", "Save", false, false)
+
+	return &slack.ModalViewRequest{
+		Type:            "modal",
+		Title:           modalTile,
+		Close:           closeText,
+		Submit:          submitText,
+		PrivateMetadata: "ssshhhhhhh",
+		CallbackID:      "list_new",
+		Blocks:          blocks,
 	}
 
 }
@@ -63,27 +140,15 @@ func GetLists(slackCommand SlackCommand, log *zap.SugaredLogger, store store.Mem
 	elementsAdded++
 
 	for _, list := range userLists {
-		text := slack.TextBlockObject{
-			Type: "mrkdwn",
-			Text: fmt.Sprintf("- *%v* (id: %v)", list.Name, list.Id),
-		}
-		buttonText := slack.TextBlockObject{
-			Type: "plain_text",
-			Text: "Open",
-		}
-		button := slack.ButtonBlockElement{
-			Type:     "button",
-			Text:     &buttonText,
-			ActionID: "open_list",
-			Value:    list.Id,
-		}
-		accessory := slack.Accessory{
-			ButtonElement: &button,
-		}
+		text := fmt.Sprintf("- *%v* - *%v* entries", list.Name, len(list.Entries))
+		textBlock := slack.NewTextBlockObject("mrkdwn", text, false, false)
+		buttonText := slack.NewTextBlockObject("plain_text", "Open", false, false)
+		button := slack.NewButtonBlockElement("open_list", list.Id, buttonText)
+		accessory := slack.NewAccessory(button)
 		section := slack.SectionBlock{
 			Type:      "section",
-			Text:      &text,
-			Accessory: &accessory,
+			Text:      textBlock,
+			Accessory: accessory,
 		}
 		blockSet[elementsAdded] = section
 		elementsAdded++

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"github.com/joostvdg/remember/pkg/remember"
 )
 
@@ -31,4 +32,21 @@ func (m MemoryStore) FindUser(userId string) (remember.User, bool) {
 		}
 	}
 	return foundUser, userIsFound
+}
+
+func (m MemoryStore) GetListForUser(userId string, listId string) (remember.MediaList, error) {
+	var list = new(remember.MediaList)
+
+	user, found := m.FindUser(userId)
+	if !found {
+		return *list, errors.New("Could not find user")
+	}
+
+	for _, listItem := range user.Lists {
+		if listItem.Id == listId {
+			list = listItem
+		}
+	}
+
+	return *list, nil
 }

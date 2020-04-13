@@ -8,6 +8,9 @@ import (
 
 type CustomContext struct {
 	echo.Context
-	MemoryStore store.MemoryStore
-	Log         *zap.SugaredLogger
+	MemoryStore   store.MemoryStore
+	Log           *zap.SugaredLogger
+	APIToken      string
+	SigningSecret string
+	BotID         string
 }

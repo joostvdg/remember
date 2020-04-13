@@ -1,7 +1,8 @@
 package slack
 
-func tokenizeSlackCommand(text string) (string, []string) {
+import "strings"
 
-	tokens := []string{"view"}
-	return "list", tokens
+func tokenizeSlackCommand(text string) (string, []string) {
+	tokens := strings.Split(text, " ")
+	return tokens[0], tokens[1:]
 }

@@ -49,6 +49,14 @@ Example of a TV Series
             * MediaItems
                 * MediaItem 0:
                     * Name Episode 1: ...
+
+## Fly.io
+
+* https://fly.io
+
+```shell script
+flyctl --app remember secrets set [name]=[value]
+```
                     
 ## Links
 

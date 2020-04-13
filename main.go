@@ -23,23 +23,36 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 	e.Use(middleware.Logger())
+	// Seems to break the Slack messaging
 	//e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 	//	TokenLookup: "header:X-XSRF-TOKEN",
 	//}))
 
 	e.GET("/auth/google/login", oauth.OauthGoogleLogin)
-	// ITS A GET?
-	//e.POST("/auth/google/callback", oauth.OauthGoogleCallback)
-	//e.PUT("/auth/google/callback", oauth.OauthGoogleCallback)
 	e.GET("/auth/google/callback", oauth.OauthGoogleCallback)
 
-	e.POST("/hoppa", slack.SlackHoppaHandler)
-	e.POST("/slack", slack.SlackInteractiveHandler)
-	e.POST("/rmb", slack.SlackHandler)
+	e.POST("/hoppa", slack.HoppaHandler)
+	e.POST("/slack", slack.InteractiveHandler)
+	e.POST("/rmb", slack.DefaultHandler)
 	e.GET("/users/:id", getUser)
 	e.GET("/users/:id/lists/:listId", getUserList)
 	e.PUT("/users/:id/lists", newList)
 	e.POST("/users/:id/lists/:listId/entries/:entryId/progression/:progressionKey/:current", updateProgression)
+
+	apiToken := os.Getenv("API_TOKEN")
+	if apiToken == "" {
+		apiToken = "ABCDEFG"
+	}
+
+	signingSecret := os.Getenv("SIGNING_SECRET")
+	if signingSecret == "" {
+		signingSecret = "ABCDEFG"
+	}
+
+	botId := os.Getenv("BOT_ID")
+	if botId == "" {
+		botId = "ABCDEFG"
+	}
 
 	sugar := zap.NewExample().Sugar()
 	defer sugar.Sync()
@@ -49,6 +62,9 @@ func main() {
 				c,
 				memoryStore,
 				sugar,
+				apiToken,
+				signingSecret,
+				botId,
 			}
 			return h(cc)
 		}
