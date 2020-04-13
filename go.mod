@@ -5,8 +5,8 @@ go 1.14
 require (
 	cloud.google.com/go v0.56.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/labstack/echo/v4 v4.1.15
 	github.com/labstack/gommon v0.3.0
+	github.com/labstack/echo/v4 v4.1.16
 	github.com/sbstjn/allot v0.0.0-20161025071122-1f2349af5ccd // indirect
 	github.com/sbstjn/hanu v0.1.0
 	github.com/slack-go/slack v0.6.3
